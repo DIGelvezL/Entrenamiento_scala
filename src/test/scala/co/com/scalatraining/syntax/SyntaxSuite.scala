@@ -24,7 +24,7 @@ class SyntaxSuite extends FunSuite{
     assert(x == 0)
 
     // Aunque tambien lo puedes hacer explicito si asi lo quieres
-    val y= "0"
+    val y = "0"
     assert(y == "0")
 
     // Si eres incredulo fijate como el tipo es fuerte y no debil
@@ -34,7 +34,7 @@ class SyntaxSuite extends FunSuite{
   }
 
   test("Scala no debe permitir iniciar en null"){
-    var x= null
+    var x = null
     assertDoesNotCompile("x = 1")
   }
 
@@ -57,11 +57,27 @@ class SyntaxSuite extends FunSuite{
       def f2(a: Int) = {
         a + 2
       }
+
+      def esPositivo(a: Int):Boolean = {
+        if(a >= 0){
+          true
+        }else{
+          false
+        }
+      }
+
+      def f4(a: Int):Boolean = {
+        a % 2 == 0
+      }
     }
 
     //fijate como no hay que hacer new de obj
     val res = obj.f2(1)
-
+    obj.x = 55
+    assert(obj.x == 55)
+    assert(obj.esPositivo(2))
+    assert(!obj.esPositivo(-2))
+    assert(obj.f4(2))
     assert(res == 3)
   }
 
@@ -93,6 +109,8 @@ class SyntaxSuite extends FunSuite{
       }
 
       def f2 = a + 2
+
+      def getA = a
     }
 
     // A una class se le debe instanciar con new pasándole los atributos que define para su construccion
@@ -104,9 +122,30 @@ class SyntaxSuite extends FunSuite{
     assert(mc.r == 4)
   }
 
+  test("Probando una clase sin atributos"){
+
+    class MyClassSinParameter(){
+
+      var r = 0
+
+      def f1 = {
+        r = r + 2
+       }
+
+    }
+
+    // A una class se le debe instanciar con new pasándole los atributos que define para su construccion
+    val mc = new MyClassSinParameter()
+    assert(mc.r == 0)
+    val res1 = mc.f1
+    assert(mc.r == 2)
+    println(s"probando el formateo con ${mc}... esperemos que funcione")
+
+  }
+
   test("Un case es una clase normal para usos especificos"){
 
-    case class MyCaseClass(a:Int, b:Int) {
+    case class MyCaseClass(a:Int, var b:Int) {
       def f1(a:Int) = a + 1
     }
 
@@ -117,6 +156,8 @@ class SyntaxSuite extends FunSuite{
     // Se puede instanciar sin new
     val mcc2 = MyCaseClass(1,2)
     assert(mcc2.f1(1) == 2)
+    println(s"probando el formateo con ${mcc1}... esperemos que funcione")
+    println(mcc2)
 
     //Que pasa si intentamos println(mcc2) ?
 
@@ -155,6 +196,110 @@ class SyntaxSuite extends FunSuite{
     val mc = new MyClass
     val res = mc.f1(1)
     assert(res == 2)
+
+    object obj extends MyTrait
+
+    val resObj = obj.f1(2)
+    assert(resObj == 3)
+
+    case class MyCaseClass() extends MyTrait
+
+    val mcc = MyCaseClass()
+    val rescc = mcc.f1(1)
+    assert(rescc == 2)
+  }
+
+  test("Probando mezclas de rasgos"){
+    trait MyTrait {
+      val numeroArrugas = 5
+    }
+
+    trait MySecondTrait{
+      val numeroArrugas = 5
+    }
+
+    object obj extends MyTrait with MySecondTrait{
+
+        override val numeroArrugas = 10
+        //val numArrugas = super[MySecondTrait].DebeSerUnaFuncion
+    }
+
+    assert(obj.numeroArrugas == 10)
+
+  }
+
+  test("Cacharreando"){
+
+    trait Calculator {
+
+      def suma(a: Double, b:Double):Double = {
+        a + b
+      }
+
+      def resta(a: Double, b:Double):Double = {
+        a - b
+      }
+
+      def multiplicacion(a: Double, b:Double):Double = {
+        a * b
+      }
+
+      def division(a: Double, b:Double):Double = {
+        a / b
+      }
+    }
+
+    class classTest(){
+
+      var r = 0
+      var a:Int = 5
+
+      def f1 = {
+        r = r + 2
+        a + 1 + r
+      }
+
+      def f2 = a + 2
+
+      def getA = a
+    }
+
+    trait MySecondTrait extends classTest{
+      val numeroArrugas = 10
+    }
+
+    object o extends MySecondTrait with Calculator
+    println(o.getA)
+    var resu = o.f1
+    println(resu)
+    println(o.numeroArrugas)
+
+    case class MyBadClass() extends  MySecondTrait with Calculator
+    val mbc = MyBadClass()
+    val suma = mbc.suma(5,8)
+    println(mbc.getA)
+    var result = mbc.f1
+    println(result)
+    println(mbc.numeroArrugas)
+    assert(suma == 13)
+
+    /*case class MyCaseClass() extends Calculator
+    val mcc = MyCaseClass()
+    val suma = mcc.suma(5,8)
+    assert(suma == 13)
+
+    object obj extends Calculator
+    val resta = obj.resta(8,5)
+    assert(resta == 3)
+
+    class MyClass extends Calculator
+    val mc = new MyClass
+    val multiplicar = mc.multiplicacion(8,5)
+    assert(multiplicar == 40)
+
+    val dividir = obj.division(8,5)
+    assert(dividir == 1.6)*/
+
   }
 
 }
