@@ -268,7 +268,7 @@ class SyntaxSuite extends FunSuite{
       val numeroArrugas = 10
     }
 
-    object o extends MySecondTrait with Calculator
+    object o extends MySecondTrait with Calculator //Si se pone calculator primero no funciona
     println(o.getA)
     var resu = o.f1
     println(resu)
@@ -276,14 +276,37 @@ class SyntaxSuite extends FunSuite{
 
     case class MyBadClass() extends  MySecondTrait with Calculator
     val mbc = MyBadClass()
-    val suma = mbc.suma(5,8)
+    val sum = mbc.suma(5,8)
     println(mbc.getA)
     var result = mbc.f1
     println(result)
     println(mbc.numeroArrugas)
-    assert(suma == 13)
+    assert(sum == 13)
 
-    /*case class MyCaseClass() extends Calculator
+  }
+
+  test("Cacharreando2"){
+
+    trait Calculator {
+
+      def suma(a: Double, b:Double):Double = {
+        a + b
+      }
+
+      def resta(a: Double, b:Double):Double = {
+        a - b
+      }
+
+      def multiplicacion(a: Double, b:Double):Double = {
+        a * b
+      }
+
+      def division(a: Double, b:Double):Double = {
+        a / b
+      }
+    }
+
+    case class MyCaseClass() extends Calculator
     val mcc = MyCaseClass()
     val suma = mcc.suma(5,8)
     assert(suma == 13)
@@ -298,7 +321,49 @@ class SyntaxSuite extends FunSuite{
     assert(multiplicar == 40)
 
     val dividir = obj.division(8,5)
-    assert(dividir == 1.6)*/
+    assert(dividir == 1.6)
+
+  }
+
+  test("Cacharreando3"){
+
+    trait Calculator {
+
+      def suma(a: Double, b:Double):Double
+
+      def resta(a: Double, b:Double):Double
+
+      def multiplicacion(a: Double, b:Double):Double
+
+      def division(a: Double, b:Double):Double
+    }
+
+    case class MyCaseClass() extends Calculator{
+      override def suma(a: Double, b:Double):Double = {
+        a + b
+      }
+
+      override def resta(a: Double, b:Double):Double = {
+        a - b
+      }
+
+      override def multiplicacion(a: Double, b:Double):Double = {
+        a * b
+      }
+
+      override def division(a: Double, b:Double):Double = {
+        a / b
+      }
+    }
+    val mcc = MyCaseClass()
+    val suma = mcc.suma(5,8)
+    assert(suma == 13)
+    val resta = mcc.resta(8,5)
+    assert(resta == 3)
+    val multiplicar = mcc.multiplicacion(8,5)
+    assert(multiplicar == 40)
+    val dividir = mcc.division(8,5)
+    assert(dividir == 1.6)
 
   }
 
