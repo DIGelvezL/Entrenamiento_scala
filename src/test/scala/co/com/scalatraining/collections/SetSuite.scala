@@ -7,6 +7,7 @@ class SetSuite extends FunSuite {
   test("map en un set") {
     val set = Set("1", "2", "3")
     val set2 = set.map(dato => dato + "prueba")
+    println(set2)
     assert(set != set2)
   }
 

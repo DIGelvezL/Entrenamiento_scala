@@ -27,15 +27,46 @@ class ListSuite extends FunSuite {
   test("Una lista se debe poder acumular") {
     val lista = List(1, 2, 3, 4)
     assertResult(10) {
-      lista.fold(0) { (acumulado, item) =>
-        acumulado + item
+      lista.fold(0) {
+        (acumulado, item) => acumulado + item
       }
     }
+  }
+
+  test("Probando fold") {
+    val lista = List(1, 2, 3, 4)
+
+    def f(a: Int, b: Int) ={
+      a + b * a - b
+    }
+
+    println(lista.fold(0) {(acumulado, item) => f(acumulado, item)})
+
+    assertResult(10) {
+      lista.fold(0) {
+        (acumulado, item) => acumulado + item
+      }
+    }
+  }
+
+  test("Probar fold en tuplas"){
+    val tupla = List[(Int, String)]((5, "hola"), (7, "Hello"))
+
+    def f(a:(Int, String), b:(Int, String)):(Int, String) = {
+      ((a._1 + b._1), (a._2 + b._2))
+    }
+
+    println(tupla.fold((0,"")) {(acumulado: (Int, String), item: (Int, String)) => f(acumulado, item)})
+
+    //assert(lista == tupla2)
+
   }
 
   test("fold sobre una List de objetos"){
     case class MyCaseClass(i:Int, var s:String)
     val lista: List[MyCaseClass] = List( MyCaseClass(1,"1"),  MyCaseClass(2, "2"))
+
+    println(lista.map(x=>x.s).fold("D"){(acc,item)=>acc+item})
 
     assertResult("12"){
       lista.map(x=>x.s).fold(""){(acc,item)=>acc+item}
@@ -96,6 +127,11 @@ class ListSuite extends FunSuite {
     val lista = List(1, 2, 3, 4)
     assertResult(List(2, 3, 4)) {
       lista.tail
+
+      val lista2 = List(1, 2, 3, 4)
+
+        //println(lista2.tail.headOption)
+
     }
   }
 
@@ -108,17 +144,25 @@ class ListSuite extends FunSuite {
 
   test("Quiero probar tuplas"){
     val tupla = (1, 2,"3", List(1, 2, 3))
+    val tubli = (1, 2, "hola", true)
     assert(tupla._2 == 2)
     assert(tupla._4.tail.head == 2)
+    assert(tubli._3 == "hola")
   }
 
   test("Una lista se debe poder dividir") {
     val lista = List(1, 2, 3, 4)
     val t = lista.splitAt(2)
     assert(t._1 == List(1, 2) && t._2 == List(3, 4))
+
+    val lista2 = List(1, 2, 3, 4, 5)
+    val t2 = lista2.splitAt(3)
+    println(t2._1)
+    println(t2._2)
   }
 
   test("Se puede hacer una lista de un solo tipo"){
+    val lista = List(1, 2, "hola")
     assertDoesNotCompile( "val l = List[String](\"1\", \"2\", 3)")
   }
 
@@ -130,7 +174,7 @@ class ListSuite extends FunSuite {
   }
 
   test("A una lista se le debe poder eliminar elementos con drop") {
-    val lista = List(1, 2, 3, 4)
+    val lista = List(1, 5, 3, 4)
     val dropped =lista.drop(2)
 
     assertResult(List(3, 4)) {
@@ -149,9 +193,23 @@ class ListSuite extends FunSuite {
   test("Una lista se debe poder filtrar con una hof") {
     val lista = List(1, 2, 3, 4)
     assertResult(List(2, 4)) {
-      lista.filter(x =>
-        x % 2 == 0
-      )
+      lista.filter(x => x % 2 == 0)
+    }
+
+    def isEven(i: Int):Boolean={
+      i % 2 == 0
+    }
+
+    assertResult(List(2, 4)) {
+      lista.filter(x => isEven(x))
+    }
+
+    assertResult(List(2, 4)) {
+      lista.filter(_% 2 == 0)
+    }
+
+    assertResult(List(2, 4)) {
+      lista.filter(isEven)
     }
   }
 
@@ -180,5 +238,22 @@ class ListSuite extends FunSuite {
     }
   }
 
+  test("Probar map en tuplas"){
+    val tubli: (Int, String) = (1, "hola")
+    val tupla = List[(Int, String)]((5, "hola"), (7, "Hello"))
+
+    def f(s:(Int, String)):(String, Int) = {
+      (s._2, s._1)
+    }
+
+    val lista = tupla.map(dato => f(dato))
+
+    val tupla2 = List[(String, Int)](("hola", 5), ("Hello", 7))
+
+    println(lista)
+
+    assert(lista == tupla2)
+
+  }
 
 }

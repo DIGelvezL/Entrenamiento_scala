@@ -367,4 +367,27 @@ class SyntaxSuite extends FunSuite{
 
   }
 
+  test("Cacharreando 4"){
+
+    trait Calculator {
+
+      def suma(a: Double, b:Double):Double
+
+      def resta(a: Double, b:Double):Double
+
+      def multiplicacion(a: Double, b:Double):Double
+
+      def division(a: Double, b:Double):Double
+    }
+
+    class MyCaseClass(a: Int, b: Int) {
+
+    }
+
+    /*val obj = new MyCaseClass(5,8) with Calculator
+    obj.resta()
+    assert(dividir == 1.6)*/
+
+  }
+
 }
