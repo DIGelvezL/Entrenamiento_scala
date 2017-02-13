@@ -2,6 +2,8 @@ package co.com.scalatraining.PatternMatching
 
 import org.scalatest.FunSuite
 
+import scala.collection.immutable.Stream.cons
+
 /**
   * Created by daniel on 9/02/17.
   */
@@ -106,7 +108,6 @@ class PatternMatchingSuite extends FunSuite {
 
     val tuplas = l.map(n => {
         val t = (n, serializar(n))
-        //println(t)
         t
       })
 
@@ -157,17 +158,6 @@ class PatternMatchingSuite extends FunSuite {
       }
     }
 
-  }
-
-  test ("Pattern ") {
-
-    val myMap = Map("MI" → "Michigan", "OH" → "Ohio", "WI" → "Wisconsin", "IA" → "Iowa")
-    intercept[NoSuchElementException] {
-      myMap("TX")
-    }
-    myMap.getOrElse("TX", "missing data")
-
-    println(myMap.getOrElse("TX", "missing data"))
   }
 
 }
