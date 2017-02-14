@@ -247,4 +247,57 @@ class OptionCheatSheet extends FunSuite {
     assert(res == Some(Some(15)))
   }
 
+  test("Cheat Sheet de fold Option") {
+    val o1: Option[Int] = None
+
+    val res: Int = o1.fold{
+      55
+    }
+    {
+      x => x + 1
+    }
+
+    assert(res == 55)
+  }
+
+  test("Cheat Sheet de reduce Option") {
+    def foo(s:String, s2:String):String = s"$s - $s2"
+    val o1 = Option(("Daniel", "Gelvez"))
+
+    //val res = o1.reduce(foo)
+
+    //println(res)
+
+    //assert(res == 55)
+  }
+
+  test("Option") {
+    case class Lab(code:Int, name:String, levelOfSec:Option[String])
+
+    val labs = Map(1->Lab(1, "s4n", Some("High")), 2->Lab(2, "softka", Some("Medium")), 3->Lab(3, "xxx", None))
+
+    def getAllSl():Iterable[String] = {
+      labs.values.map(x => x.levelOfSec).flatten
+    }
+
+    assert(getAllSl() == List("High","Medium"))
+  }
+
+  test("1 to 100") {
+    val x = (1 to 100).map(Option(_))
+    val res = x.filter(a => a.getOrElse(0) % 2 == 0).flatten.sum / x.filter(a => a.getOrElse(0) % 2 == 0).length
+
+    val res2 = x.filter(a => a.getOrElse(0) % 2 == 0).flatten.fold(0){(acc, item) => acc + item} / x.filter(a => a.getOrElse(0) % 2 == 0).length
+
+    val r1 = (1 to 100).map(Option(_)).filter(a => a.getOrElse(0) % 2 == 0)
+    val r2 = r1.fold(Option(0)){(acc, item) => for{
+                                                  a <- acc
+                                                  b <- item
+                                                }yield a+b}
+    println(r2.map(o => o/r1.size))
+
+    assert(res == 51)
+    assert(res == res2)
+  }
+
 }

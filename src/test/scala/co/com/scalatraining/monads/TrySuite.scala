@@ -7,20 +7,20 @@ import scala.util.{Failure, Success, Try}
 class TrySuite extends FunSuite with Matchers {
 
   def estallar(): Int ={
-    println("Diviendo por cero :/")
+    //println("Diviendo por cero :/")
     2/0
   }
 
   def computar(): Int ={
-    println("Retornando un 1 :)")
+    //println("Retornando un 1 :)")
     1
   }
 
-  def f = Try{estallar}
-  def s = Try{computar}
+  def f: Try[Int] = Try{estallar}
+  def s: Try[Int] = Try{computar}
 
   test("Tratando el Try como un bloque try-catch"){
-    val res = Try{
+    val res: Try[Int] = Try{
       1
       2
       3
@@ -53,7 +53,7 @@ class TrySuite extends FunSuite with Matchers {
     val res = s.map(x=>"HOLA")
     assert(res.isSuccess)
 
-    for{
+    val c: Try[Assertion] = for{
       ss <- res
     }yield{
       assert(ss == "HOLA")
@@ -62,7 +62,7 @@ class TrySuite extends FunSuite with Matchers {
   }
 
   test("Un Success se debe poder map [assert con flatmap]"){
-    val res = s.map(x=>"HOLA")
+    val res: Try[String] = s.map(x=>"HOLA")
 
     res.flatMap(x=> Success(assert(x=="HOLA")))
 
@@ -70,7 +70,7 @@ class TrySuite extends FunSuite with Matchers {
 
   test("Un Failure se debe poder recuperar con recover"){
 
-    val res = f.map(x=>"HOLA")
+    val res: Try[String] = f.map(x=>"HOLA")
                 .recover{case e: Exception => {
                 "HOLA ME HE RECUPERADO"
               }}
@@ -81,7 +81,7 @@ class TrySuite extends FunSuite with Matchers {
 
   test("Un Failure se debe poder recuperar con recoverWith"){
 
-    val res = f.map(x=>"HOLA")
+    val res: Try[Any] = f.map(x=>"HOLA")
       .recoverWith{case e: Exception => {
       s
     }}
@@ -143,6 +143,129 @@ class TrySuite extends FunSuite with Matchers {
     assert(res.isFailure)
 
   }
+
+  test("Entendiendo recover Try"){
+    def estallar(i:Int): Int ={
+      i/0
+    }
+
+    def computar(i:Int): Int ={
+      i + 5
+    }
+
+    val res: Try[Int] = Try{estallar(5)}.recover{case e: Exception =>{
+      computar(5)
+    }}
+
+    val res2 = res.map(x => x + 5)
+
+    assert(res2.isSuccess)
+  }
+
+  test("Entendiendo recoverWith Try"){
+    def estallar(i:Int): Int ={
+      i/0
+    }
+
+    def computar(i:Int): Int ={
+      i + 5
+    }
+
+    val res: Try[Int] = Try{estallar(5)}.recoverWith{case e: Exception =>{
+      Try{computar(5)}
+    }}
+
+    val res2 = res.flatMap(x => Try{x - 5})
+
+    assert(res2.isSuccess)
+  }
+
+  test("Entendiendo recoverWith Try con failure"){
+    def estallar(i:Int): Int ={
+      i/0
+    }
+
+    def fallar(i:Int): Int ={
+      i/0
+    }
+
+    def computar(i:Int): Int ={
+      i + 5
+    }
+
+    val res: Try[Int] = Try{estallar(5)}.recoverWith{case e: Exception =>{
+      Try{fallar(5)}
+    }}
+
+    val res2 = res.flatMap(x => Try{x - 5})
+
+    assert(res2.isFailure)
+  }
+
+  test("Entendiendo recover en un recoverWith Try"){
+    def estallar(i:Int): Int ={
+      i/0
+    }
+
+    def fallar(i:Int): Int ={
+      i/0
+    }
+
+    def computar(i:Int): Int ={
+      i + 5
+    }
+
+    val res: Try[Int] = Try{estallar(5)}.recoverWith{case e: Exception =>{
+      Try{fallar(5)}.recover{case e: Exception =>{
+        computar(5)
+      }}}}
+
+    val res2 = res.flatMap(x => Try{"Hola"})
+
+    assert(res2.isSuccess)
+  }
+
+  test("Entendiendo recoverWith en un recoverWith Try"){
+    def estallar(i:Int): Int ={
+      i/0
+    }
+
+    def fallar(i:Int): Int ={
+      i/0
+    }
+
+    def computar(i:Int): Int ={
+      i + 5
+    }
+
+    val res: Try[Int] = Try{estallar(5)}.recoverWith{case e: Exception =>{
+      Try{fallar(5)}.recoverWith{case e: Exception =>{
+        Try{computar(5)}.map(x => x * 10)
+      }}}}
+
+    assert(res == Success(100))
+  }
+
+  test("1 to 100") {
+    def foo(i:Int):Boolean={i % 2 != 0}
+
+    val x = (1 to 100).map(Try(_))
+    val res = x.map(x => if(foo(x.getOrElse(0))) Failure else x)
+
+    assert(res.head == Failure)
+  }
+
+  test("Lista con Try") {
+    case class Lab(code:Int, name:String, levelOfSec:Option[String])
+
+    val lista = Try{List(5, 4, 3, 2, 1, 0)}
+    val res = lista.map(x => x.map(y => 5/y)).recover{
+      case e: Exception => "No se puede dividir pr 0"
+    }
+
+    assert(res.isSuccess)
+  }
+
 
 
   /*
