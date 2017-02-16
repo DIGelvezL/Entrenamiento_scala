@@ -379,17 +379,17 @@ class FutureSuite extends FunSuite {
 
     def f1(i:Int) ={
       Future{
-        Thread.sleep(100)
+        Thread.sleep(2000)
         10/i
       }.recover {
         case e: ArithmeticException => {
-          "No es posible dividir por cero"
+          0
         }}
     }
 
     def f2(i:Int) ={
       Future{
-        Thread.sleep(300)
+        Thread.sleep(2000)
         i + 5
       }
     }
@@ -399,7 +399,30 @@ class FutureSuite extends FunSuite {
       b <- lista2.map(x => f1(x)).map(x => Await.result(x, 10 seconds))
     } yield List(a, b)
 
-    assert(resultado.flatten != List(2, 1, 0))
+    assert(resultado.flatten != lista2)
+
+  }
+
+  test("Probando el inicio de hilos al mismo tiempo") {
+
+    val f1 = Future{
+      Thread.sleep(2000)
+      10
+    }
+
+    val f2 = Future{
+      Thread.sleep(2000)
+      5
+    }
+
+    val resultado = for {
+      a <- f1
+      b <- f2
+    } yield a * b
+
+    val res = Await.result(resultado, 10 seconds)
+
+    assert(res == 50)
 
   }
 
@@ -408,12 +431,12 @@ class FutureSuite extends FunSuite {
       i+1
     }
 
-    /*while (false){
+    while (true){
       val res = Future{
         println(Thread.currentThread().getName)
         f(5)
       }
-    }*/
+    }
   }
 
 
