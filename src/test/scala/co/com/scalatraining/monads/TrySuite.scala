@@ -215,7 +215,7 @@ class TrySuite extends FunSuite with Matchers {
       i + 5
     }
 
-    val res: Try[Int] = Try{estallar(5)}.recoverWith{case e: Exception =>{
+    val res = Try{estallar(5)}.recoverWith{case e: Exception =>{
       Try{fallar(5)}.recover{case e: Exception =>{
         computar(5)
       }}}}
@@ -223,6 +223,27 @@ class TrySuite extends FunSuite with Matchers {
     val res2 = res.flatMap(x => Try{"Hola"})
 
     assert(res2.isSuccess)
+  }
+
+  test("Entendiendo recoverWith en un recover Try"){
+    def estallar(i:Int): Int ={
+      i/0
+    }
+
+    def fallar(i:Int): Int ={
+      i/0
+    }
+
+    def computar(i:Int): Int ={
+      i + 5
+    }
+
+    val res = Try{estallar(5)}.recover{case e: Exception =>{
+      Try{fallar(5)}.recoverWith{case e: Exception =>{
+        Try{computar(5)}.map(x => x * 10)
+      }}}}
+
+    assert(res == Success(Success(100)))
   }
 
   test("Entendiendo recoverWith en un recoverWith Try"){
@@ -238,7 +259,7 @@ class TrySuite extends FunSuite with Matchers {
       i + 5
     }
 
-    val res: Try[Int] = Try{estallar(5)}.recoverWith{case e: Exception =>{
+    val res = Try{estallar(5)}.recoverWith{case e: Exception =>{
       Try{fallar(5)}.recoverWith{case e: Exception =>{
         Try{computar(5)}.map(x => x * 10)
       }}}}
@@ -256,8 +277,6 @@ class TrySuite extends FunSuite with Matchers {
   }
 
   test("Lista con Try") {
-    case class Lab(code:Int, name:String, levelOfSec:Option[String])
-
     val lista = Try{List(5, 4, 3, 2, 1, 0)}
     val res = lista.map(x => x.map(y => 5/y)).recover{
       case e: Exception => "No se puede dividir pr 0"
@@ -265,6 +284,16 @@ class TrySuite extends FunSuite with Matchers {
 
     assert(res.isSuccess)
   }
+
+  test("Lista con Try to Option") {
+    val lista = List(1, 2, 3, 0)
+    val l = lista.map(x => Try{6/x}.recover{
+      case e: Exception => 0
+    })
+
+    assert(l.flatMap(x => x.toOption) == List(6, 3, 2, 0))
+  }
+
 
 
 

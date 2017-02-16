@@ -1,12 +1,14 @@
 package co.com.scalatraining.monads
 
+import java.io.Serializable
 import java.util.Random
 import java.util.concurrent.Executors
 
 import org.scalatest.FunSuite
+
 import scala.language.postfixOps
-import scala.util.{Failure, Success}
-import scala.concurrent.{ExecutionContext, Await, Future}
+import scala.util.{Failure, Success, Try}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -22,26 +24,109 @@ class FutureSuite extends FunSuite {
       Thread.sleep(500)
       "Hola"
     }
-    val resultado = Await.result(saludo, 10 seconds)
+
+    val resultado: String = Await.result(saludo, 10 seconds)
+    val resultado2 = Await.result(saludo, Duration.Inf)
+
     assert(resultado == "Hola")
     assert(hiloPpal != hiloFuture)
   }
 
-  test("map en Future") {
-
-
-
+  test("map en Future trabaja con el mismo hilo") {
+    var hilo1 = ""
     val saludo = Future {
-
+      hilo1 = Thread.currentThread().getName
       Thread.sleep(500)
       "Hola"
     }
-    val saludoCompleto = saludo.map(mensaje => {
 
+    var hilo2 = ""
+    val saludoCompleto: Future[String] = saludo.map(mensaje => {
+      hilo2 = Thread.currentThread().getName
       mensaje + " muchachos"
     })
+
     val resultado = Await.result(saludoCompleto, 10 seconds)
     assert(resultado == "Hola muchachos")
+    assert(hilo1 == hilo2)
+  }
+
+  test("flatMap en Future") {
+    var hilo1 = ""
+    val saludo = Future {
+      hilo1 = Thread.currentThread().getName
+      Thread.sleep(500)
+      "Hola"
+    }
+
+    var hilo2 = ""
+    implicit val ecParaPrimerHilo = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
+
+    val saludoCompleto: Future[String] = saludo.flatMap{mensaje => Future{
+        hilo2 = Thread.currentThread().getName
+        mensaje + " muchachos"
+      }(ecParaPrimerHilo)
+    }
+
+    val resultado = Await.result(saludoCompleto, 10 seconds)
+
+    assert(resultado == "Hola muchachos")
+    assert(hilo1 != hilo2)
+  }
+
+  test("2 Future en un flatMap, el primer future trabaja en un hilo diferente y el segundo con el mismo hilo del principal") {
+    var hilo1 = ""
+    val saludo = Future {
+      hilo1 = Thread.currentThread().getName
+      Thread.sleep(500)
+      "Hola"
+    }
+
+    var hilo2 = ""
+    var hilo3 = ""
+    val saludoCompleto = saludo.flatMap{ mensaje => Future{
+      hilo2 = Thread.currentThread().getName
+      "segundo future"}
+      Future{
+        hilo3 = Thread.currentThread().getName
+        mensaje + " muchachos"
+      }}
+
+    val resultado = Await.result(saludoCompleto, 10 seconds)
+    assert(resultado == "Hola muchachos")
+    assert(hilo1 != hilo2)
+    assert(hilo1 == hilo3)
+  }
+
+  test("Un Future dentro de otro Future en flatMap ") {
+    implicit val ecParaPrimerHilo = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
+    var hilo1 = ""
+    val saludo = Future {
+      hilo1 = Thread.currentThread().getName
+      Thread.sleep(500)
+      "Hola"
+    }(ecParaPrimerHilo)
+
+    var hilo2 = ""
+    var hilo3 = ""
+    val saludoCompleto: Future[Future[String]] = saludo.flatMap { mensaje =>
+      implicit val ecParaFlatMap = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
+      Future {
+        hilo2 = Thread.currentThread().getName
+        Future {
+          hilo3 = Thread.currentThread().getName
+          mensaje + " muchachos"
+        }(ecParaFlatMap)
+
+      }(ecParaFlatMap)
+    }
+
+    val resultado = Await.result(saludoCompleto, 10 seconds)
+    val resultadoFinal = Await.result(resultado, 10 seconds)
+
+    assert(resultadoFinal == "Hola muchachos")
+    assert(hilo1 != hilo2)
+    assert(hilo2 == hilo3)
   }
 
   test("Se debe poder encadenar Future con for-comp") {
@@ -55,7 +140,7 @@ class FutureSuite extends FunSuite {
       2
     }
 
-    val f3 = for {
+    val f3: Future[Int] = for {
       res1 <- f1
       res2 <- f2
     } yield res1 + res2
@@ -149,9 +234,6 @@ class FutureSuite extends FunSuite {
     }
 
     val res = Await.result(f1, 10 seconds)
-
-    println(threadName1)
-    println(threadName2)
 
     assert(threadName1 != threadName2)
   }
@@ -262,6 +344,76 @@ class FutureSuite extends FunSuite {
 
     assert(elapsed >= estimatedElapsed)
     assert(res == 6)
+  }
+
+  test("Lista de Future con recover") {
+    val lista = List(5, 4, 3)
+    val lista2 = List(2, 1, 0)
+
+    def foo(l1:List[Int], l2:List[Int]) ={
+      List(
+        Future{
+          l1.map(x => 5/x)
+        }.recover {
+          case e: ArithmeticException => {
+            "No es posible dividir por cero"
+          }},
+        Future{
+          l2.map(x => 5/x)
+        }.recover {
+          case e: ArithmeticException => {
+            "No es posible dividir por cero"
+          }}
+      )
+    }
+
+    val resultado = foo(lista, lista2)
+    val res1 = Await.result(resultado.head, 10 seconds)
+    val res2 = Await.result(resultado.last, 10 seconds)
+
+    assert(res1 != res2)
+  }
+
+  test("futuro en un for"){
+    val lista2 = List(2, 1, 0)
+
+    def f1(i:Int) ={
+      Future{
+        Thread.sleep(100)
+        10/i
+      }.recover {
+        case e: ArithmeticException => {
+          "No es posible dividir por cero"
+        }}
+    }
+
+    def f2(i:Int) ={
+      Future{
+        Thread.sleep(300)
+        i + 5
+      }
+    }
+
+    val resultado = for {
+      a <- lista2.map(x => f2(x)).map(x => Await.result(x, 10 seconds))
+      b <- lista2.map(x => f1(x)).map(x => Await.result(x, 10 seconds))
+    } yield List(a, b)
+
+    assert(resultado.flatten != List(2, 1, 0))
+
+  }
+
+  test("loop infinito") {
+    def f(i:Int): Int ={
+      i+1
+    }
+
+    /*while (false){
+      val res = Future{
+        println(Thread.currentThread().getName)
+        f(5)
+      }
+    }*/
   }
 
 
