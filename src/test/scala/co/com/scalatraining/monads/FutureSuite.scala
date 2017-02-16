@@ -431,13 +431,118 @@ class FutureSuite extends FunSuite {
       i+1
     }
 
-    while (true){
+    /*while (true){
       val res = Future{
         println(Thread.currentThread().getName)
         f(5)
       }
-    }
+    }*/
   }
 
+  test("Flatten en futuro"){
+    val lista2 = List(2, 1, 0)
+
+    def f1(i:Int) ={
+      Future{
+        Thread.sleep(100)
+        10/i
+      }.recover {
+        case e: ArithmeticException => {
+          0
+        }}
+    }
+
+    val resultado = lista2.map(x => Future{f1(x)})//.flatMap(x => Future{Await.result(x, 10 seconds)})
+    val listRes = resultado.map(l => Await.result(l.flatten, 10 seconds))
+
+    assert(listRes == List(5, 10, 0))
+
+  }
+
+  test("zipWith en futuro"){
+    def f1(i:Int) ={
+      Future{
+        Thread.sleep(100)
+        10/i
+      }.recover {
+        case e: ArithmeticException => {
+          "No se puede dividir por: 0"
+        }}
+    }
+
+    val fut1 = f1(2)
+    val fut2 = f1(0)
+
+    val zipWith = fut1.zipWith(fut2)((f1, f2) => s"La función uno es $f1 & la función dos $f2")
+    val res = Await.result(zipWith, 10 seconds)
+
+    assert(res != List(5, 10, 0))
+
+  }
+
+  test("Transform en futuro"){
+    def f1(i:Int) ={
+      Future{
+        Thread.sleep(100)
+        10/i
+      }.recover {
+        case e: ArithmeticException => {
+          "No se puede dividir por: 0"
+        }}
+    }
+
+    val fut1 = f1(2)
+    val fut2 = f1(0)
+
+    val t1 = Await.result(fut1.transform(Try(_)), 10 seconds)
+    val t2 = Await.result(fut2.transform(Try(_)), 10 seconds)
+
+    assert(t1.isSuccess)
+    assert(t1 != t2)
+
+  }
+
+  test("transformWith en futuro"){
+    def f1(i:Int) ={
+      Future{
+        Thread.sleep(100)
+        10/i
+      }.recover {
+        case e: ArithmeticException => {
+          "No se puede dividir por: 0"
+        }}
+    }
+
+    val fut1 = f1(2)
+    val fut2 = f1(0)
+
+    val t1 = Await.result(fut1.transformWith(x => Future{x}), 10 seconds)
+    val t2 = Await.result(fut2.transformWith(x => Future{x}), 10 seconds)
+
+    assert(t1.isSuccess)
+    assert(t1 != t2)
+
+  }
+
+  test("onSuccess and onFailure en futuro"){
+    def f1(i:Int) ={
+         10/i
+
+    }
+
+    val fut1 = f1(2)
+    val fut2 = Future{0}
+
+    val someFuture = Future{0}
+    //someFuture.foreach(_.neutralize(PERMANENTLY))
+    //someFuture.foreach(_.launch(target))
+    val r1 = someFuture.foreach(x => f1(x))
+    //println(r1)
+    val t1 = Await.result(someFuture, 10 seconds)
+    println(t1)
+    //assert(t1.isSuccess)
+    //assert(t1 != t2)
+
+  }
 
 }
