@@ -431,12 +431,12 @@ class FutureSuite extends FunSuite {
       i+1
     }
 
-    /*while (true){
+    while (true){
       val res = Future{
         println(Thread.currentThread().getName)
         f(5)
       }
-    }*/
+    }
   }
 
   test("Flatten en futuro"){
@@ -502,6 +502,20 @@ class FutureSuite extends FunSuite {
 
   }
 
+  test("Transform2 en futuro"){
+
+    val fut2 = Future{5}
+
+    val res = fut2.transform(x => Try{x.map(y => y*5)})
+    val res2 = fut2.transform(x => x.map(y => y*5))
+
+    val t1 = Await.result(res, 10 seconds)
+    val t2 = Await.result(res2, 10 seconds)
+
+    assert(t1.isSuccess)
+
+  }
+
   test("transformWith en futuro"){
     def f1(i:Int) ={
       Future{
@@ -524,24 +538,31 @@ class FutureSuite extends FunSuite {
 
   }
 
-  test("onSuccess and onFailure en futuro"){
+  test("foreach en futuro"){
     def f1(i:Int) ={
-         10/i
+         i/2
 
     }
 
-    val fut1 = f1(2)
-    val fut2 = Future{0}
+    val fut = Future{10}
 
-    val someFuture = Future{0}
-    //someFuture.foreach(_.neutralize(PERMANENTLY))
-    //someFuture.foreach(_.launch(target))
-    val r1 = someFuture.foreach(x => f1(x))
-    //println(r1)
-    val t1 = Await.result(someFuture, 10 seconds)
-    println(t1)
-    //assert(t1.isSuccess)
-    //assert(t1 != t2)
+    val r1: Unit = fut.foreach(x => f1(x))
+
+    assert(Await.result(fut, 10 seconds) != fut.foreach(x => f1(x)))
+  }
+
+  test("unit en futuro"){
+    def foo(s: String) = s match {
+      case null | "" => Future.unit
+      case "Hola" => Future{s"$s => es un complemento!"}
+    }
+
+    val f1 = Future{""}
+    val f2 = Future{"Hola"}
+    val r1 = f1 flatMap foo
+    val r2 = f2 flatMap foo
+
+    assert(r1 != r2)
 
   }
 
